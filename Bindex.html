@@ -1,0 +1,995 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradingView Advanced Charts with Multiple CSV Data Demo</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .chart-container {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    height: 100vh;
+    overflow: visible; /* Ensure overflow is visible */
+}
+
+.chart-wrapper {
+    width: 50%;
+    height: 50%;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: visible; /* Ensure overflow is visible */
+}
+
+.chart {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    overflow: visible; /* Ensure overflow is visible */
+}
+
+    #formSection {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    #chartSection {
+      display: none;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .floating-widget {
+      position: fixed;
+      top: 60px;
+      /* Adjust for nav bar */
+      width: 400px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      display: none;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    #price-widget {
+      right: 20px;
+    }
+
+    #log-widget {
+      left: 20px;
+    }
+
+    .close-widget {
+      float: right;
+      cursor: pointer;
+      font-size: 20px;
+    }
+
+    #priceTableContainer,
+    #tradeLogContainer {
+      display: none;
+    }
+
+    /* Navigation Tab Styles */
+    nav {
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .tab-link {
+      display: inline-block;
+      padding: 5px 10px;
+      margin-right: 10px;
+      text-decoration: none;
+      color: #333;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .tab-link.active {
+      background-color: #ddd;
+      border-color: #ccc;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body class="m-0 p-0">
+  <div id="formSection" class="p-4">
+    <h1 class="text-2xl font-bold mb-4">Select CSV Files for Charts</h1>
+    <form id="csvForm" class="w-full max-w-lg">
+      <div class="mb-4">
+        <label for="leftTop" class="block text-sm font-medium text-gray-700">Left Top Chart (CE Data):</label>
+        <input type="file" id="leftTop" name="leftTop" accept=".csv" class="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100">
+      </div>
+      <div class="mb-4">
+        <label for="rightTop" class="block text-sm font-medium text-gray-700">Right Top Chart (SPOT Data):</label>
+        <input type="file" id="rightTop" name="rightTop" accept=".csv" class="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100">
+      </div>
+      <div class="mb-4">
+        <label for="leftBottom" class="block text-sm font-medium text-gray-700">Left Bottom Chart (PE Data):</label>
+        <input type="file" id="leftBottom" name="leftBottom" accept=".csv" class="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100">
+      </div>
+      <div class="mb-4">
+        <label for="rightBottom" class="block text-sm font-medium text-gray-700">Right Bottom Chart (RHEL Data):
+        </label>
+        <input type="file" id="rightBottom" name="rightBottom" accept=".csv" class="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100">
+      </div>
+    </form>
+    <button id="loadCharts" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Load
+      Charts</button>
+  </div>
+
+  <nav>
+    <a href="#section1" class="tab-link active" data-timeframe="5S">Section 1: 5 sec</a>
+    <a href="#section2" class="tab-link" data-timeframe="1">Section 2: 1 min</a>
+    <a href="#section3" class="tab-link" data-timeframe="3">Section 3: 3 min</a>
+    <a href="#section4" class="tab-link" data-timeframe="5">Section 4: 5 min</a>
+    <a href="#section5" class="tab-link" data-timeframe="15">Section 5: 15 min</a>
+    <a href="#section6" class="tab-link" data-timeframe="30">Section 6: 30 min</a>
+  </nav>
+
+  <div id="chartSection">
+    <div class="chart-container">
+      <div class="chart-wrapper">
+        <div id="chart_left_top" class="chart"></div>
+      </div>
+      <div class="chart-wrapper">
+        <div id="chart_right_top" class="chart"></div>
+      </div>
+      <div class="chart-wrapper">
+        <div id="chart_left_bottom" class="chart"></div>
+      </div>
+      <div class="chart-wrapper">
+        <div id="chart_right_bottom" class="chart"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="priceTableContainer">
+    <div class="bg-white shadow-lg rounded-lg p-8 max-w-3xl w-full mb-8">
+      <h1 class="text-2xl font-bold mb-6 text-center">Price Table</h1>
+      <table id="priceTable" class="min-w-full border-collapse">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="border px-4 py-2 text-left">Time</th>
+            <th class="border px-4 py-2 text-left">CallPrice</th>
+            <th class="border px-4 py-2 text-left">SpotPrice</th>
+            <th class="border px-4 py-2 text-left">PutPrice</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="border px-4 py-2" id="currentTime"></td>
+            <td class="border px-4 py-2" id="callPrice"></td>
+            <td class="border px-4 py-2" id="spotPrice"></td>
+            <td class="border px-4 py-2" id="putPrice"></td>
+          </tr>
+          <tr>
+            <td class="border px-4 py-2"></td>
+            <td class="border px-4 py-2">
+              <button class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-400"
+                onclick="buy('callPrice')">Buy</button>
+              <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-400"
+                onclick="sell('callPrice')">Sell</button>
+              <div id="callLog" class="mt-2 text-sm text-gray-600"></div>
+              <div id="callChange" class="text-sm text-gray-500">Change: 0%</div>
+            </td>
+            <td class="border px-4 py-2"></td>
+            <td class="border px-4 py-2">
+              <button class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-400"
+                onclick="buy('putPrice')">Buy</button>
+              <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-400"
+                onclick="sell('putPrice')">Sell</button>
+              <div id="putLog" class="mt-2 text-sm text-gray-600"></div>
+              <div id="putChange" class="text-sm text-gray-500">Change: 0%</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tradeLogContainer">
+    <div class="bg-white shadow-lg rounded-lg p-8 max-w-3xl w-full">
+      <h2 class="text-2xl font-bold mb-6 text-center">Trade Log</h2>
+      <table id="tradeLogTable" class="min-w-full border-collapse">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="border px-4 py-2 text-left">Trade No</th>
+            <th class="border px-4 py-2 text-left">Time</th>
+            <th class="border px-4 py-2 text-left">Entry Type</th>
+            <th class="border px-4 py-2 text-left">Entry Price</th>
+            <th class="border px-4 py-2 text-left">Exit Price</th>
+            <th class="border px-4 py-2 text-left">Change %</th>
+          </tr>
+        </thead>
+        <tbody id="tradeLogBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="mt-4 text-center text-gray-600">Press Ctrl+. to toggle the price widget. Press Ctrl+; to toggle the trade
+    log widget.</p>
+
+  <div id="price-widget" class="floating-widget">
+    <span class="close-widget" onclick="toggleWidget('price-widget')">×</span>
+    <h3 class="text-lg font-bold mb-2">Price Table</h3>
+    <div id="price-widget-content"></div>
+  </div>
+
+  <div id="log-widget" class="floating-widget">
+    <span class="close-widget" onclick="toggleWidget('log-widget')">×</span>
+    <h3 class="text-lg font-bold mb-2">Trade Log</h3>
+    <div id="log-widget-content"></div>
+  </div>
+
+  <script type="text/javascript" src="charting_library/charting_library.js"></script>
+  <script type="module">
+    const allBars = {
+      leftTop: [],
+      rightTop: [],
+      leftBottom: [],
+      rightBottom: []
+    };
+
+    let lastUpdateTime = 0;
+    let isPaused = false;
+    let priceUpdateInterval; // Variable to store the interval ID
+
+    // Function to convert seconds to milliseconds
+    function unixToMillis(unixTime) {
+      return unixTime * 1000;
+    }
+
+    // Function to read CSV data
+    async function readCSV(file) {
+      const text = await file.text();
+      const rows = text.split('\n');
+      const data = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i].split(',');
+        data.push({
+          time: unixToMillis(parseFloat(row[0])), // Convert time to milliseconds
+          open: parseFloat(row[1]),
+          high: parseFloat(row[2]),
+          low: parseFloat(row[3]),
+          close: parseFloat(row[4]),
+          volume: parseFloat(row[5])
+        });
+      }
+      return data;
+    }
+
+    const dataArrays = {
+      '5S': [],
+      '1': [],
+      '3': [],
+      '5': [],
+      '15': [],
+      '30': [],
+      '60': [],
+      '120': [],
+      '240': [],
+      '1D': [],
+      '1W': [],
+      '1M': []
+    };
+
+    let historicalData = []; // Stores data for resampling
+
+    function streamData(data, interval = 5000) {
+      let index = 0;
+      return {
+        next() {
+          return new Promise((resolve) => {
+            if (index < data.length) {
+              setTimeout(() => {
+                resolve({ value: data[index++], done: false });
+              }, interval);
+            } else {
+              resolve({ done: true });
+            }
+          });
+        },
+        [Symbol.asyncIterator]() {
+          return this;
+        }
+      };
+    }
+
+    function aggregateData(data, timeframe) {
+      const aggregated = [];
+      let currentBucket = null;
+      const timeframeMs = getTimeframeMs(timeframe);
+
+      for (let row of data) {
+        const bucketTime = Math.floor(row.time / timeframeMs) * timeframeMs;
+
+        if (!currentBucket || currentBucket.time !== bucketTime) {
+          if (currentBucket) {
+            aggregated.push(currentBucket);
+          }
+          currentBucket = {
+            time: bucketTime,
+            open: row.open,
+            high: row.high,
+            low: row.low,
+            close: row.close,
+            volume: row.volume
+          };
+        } else {
+          currentBucket.high = Math.max(currentBucket.high, row.high);
+          currentBucket.low = Math.min(currentBucket.low, row.low);
+          currentBucket.close = row.close;
+          currentBucket.volume += row.volume;
+        }
+      }
+
+      if (currentBucket) {
+        aggregated.push(currentBucket);
+      }
+
+      return aggregated;
+    }
+
+    function getTimeframeMs(timeframe) {
+      const unit = timeframe.slice(-1);
+      const value = parseInt(timeframe);
+      switch (unit) {
+        case 'S':
+          return value * 1000;
+        case 'D':
+          return value * 24 * 60 * 60 * 1000;
+        case 'W':
+          return value * 7 * 24 * 60 * 60 * 1000;
+        case 'M':
+          return value * 30 * 24 * 60 * 60 * 1000;
+        default:
+          return value * 60 * 1000; // Assume minutes if no unit specified
+      }
+    }
+
+    function resampleData(data, timeframe) {
+      const resampledData = [];
+      let currentBar = null;
+      const timeframeMs = getTimeframeMs(timeframe);
+
+      for (const row of data) {
+        const barTime = Math.floor(row.time / timeframeMs) * timeframeMs;
+
+        if (!currentBar || currentBar.time !== barTime) {
+          if (currentBar) {
+            resampledData.push(currentBar);
+          }
+          currentBar = {
+            time: barTime,
+            open: row.open,
+            high: row.high,
+            low: row.low,
+            close: row.close,
+            volume: row.volume
+          };
+        } else {
+          currentBar.high = Math.max(currentBar.high, row.high);
+          currentBar.low = Math.min(currentBar.low, row.low);
+          currentBar.close = row.close;
+          currentBar.volume += row.volume;
+        }
+      }
+
+      if (currentBar) {
+        resampledData.push(currentBar);
+      }
+
+      return resampledData;
+    }
+
+    async function startStreaming(allData) {
+      // Combine data from all four CSV files into a single array, sorted by time
+      const combinedData = [...allData.leftTop, ...allData.rightTop, ...allData.leftBottom, ...allData.rightBottom]
+        .sort((a, b) => a.time - b.time);
+
+      const dataStream = streamData(combinedData, 1000);
+      for await (const newData of dataStream) {
+        if (isPaused) {
+          await new Promise(resolve => {
+            const resumeListener = () => {
+              if (!isPaused) {
+                resolve();
+                document.removeEventListener('keydown', resumeListener);
+              }
+            }
+            document.addEventListener('keydown', resumeListener);
+          });
+        }
+
+        console.log("New data received:", new Date(newData.time), newData);
+
+        // Update 5S array directly
+        dataArrays['5S'].push(newData);
+        historicalData.push(newData); // Add new data to historical data
+
+        // Resample data for other timeframes
+        for (let timeframe in dataArrays) {
+          if (timeframe !== '5S') {
+            // Aggregate data for the specific timeframe
+            const aggregatedData = aggregateData(historicalData, timeframe);
+            dataArrays[timeframe] = aggregatedData; // Update dataArrays with aggregated data
+          }
+        }
+
+        notifySubscribers(newData);
+      }
+      console.log("Streaming completed");
+    }
+
+    const subscribers = new Map();
+
+    function notifySubscribers(newData) {
+      for (let [subscriberUID, handler] of subscribers) {
+        const {
+          resolution
+        } = handler;
+
+        if (resolution === '5S') {
+          handler.callback(newData);
+        } else {
+          const resampledData = resampleData(historicalData, resolution);
+          if (resampledData.length > 0) {
+            handler.callback(resampledData[resampledData.length - 1]); // Send the latest resampled data
+          }
+        }
+      }
+
+      // Update price widget after notifying chart subscribers
+      updatePriceWidget(newData);
+    }
+
+    const configurationData = {
+      supported_resolutions: ["5S", "1", "3", "5", "15", "30", "60", "120", "240", "1D", "1W", "1M"],
+      exchanges: [{
+        value: 'Kraken',
+        name: 'Kraken',
+        desc: 'Kraken bitcoin exchange',
+      }],
+      symbols_types: [{
+        name: 'crypto',
+        value: 'crypto',
+      }],
+    };
+
+    const Datafeed = {
+      onReady: (callback) => {
+        console.log('[onReady]: Method call');
+        setTimeout(() => callback(configurationData));
+      },
+
+      searchSymbols: (userInput, exchange, symbolType, onResultReadyCallback) => {
+        console.log('[searchSymbols]: Method call');
+        onResultReadyCallback([]);
+      },
+
+      resolveSymbol: (symbolName, onSymbolResolvedCallback, onResolveErrorCallback) => {
+        console.log('[resolveSymbol]: Method call', symbolName);
+        const symbolInfo = {
+          name: symbolName,
+          description: symbolName,
+          type: 'crypto',
+          session: '24x7',
+          timezone: "Asia/Kolkata",
+          width: "100%", // Ensure the chart takes full width of the container
+          height: "100%", // Ensure the chart takes full height of the container
+          minmov: 1,
+          pricescale: 100,
+          has_intraday: true,
+          has_seconds: true,
+          intraday_multipliers: ['1', '60'],
+          seconds_multipliers: ["5"],
+          supported_resolutions: configurationData.supported_resolutions,
+          volume_precision: 2,
+          data_status: 'streaming',
+          visible: true, // Ensure the time scale (X-axis) is visible
+        // right_offset: 5, // Adjust as needed
+    };
+      
+        onSymbolResolvedCallback(symbolInfo);
+      },
+
+      getBars: (symbolInfo, resolution, periodParams, onHistoryCallback, onErrorCallback) => {
+        const {
+          from,
+          to,
+          firstDataRequest
+        } = periodParams;
+        console.log('[getBars]: Method call', symbolInfo, resolution, new Date(from * 1000), new Date(to * 1000));
+
+        if (firstDataRequest) {
+          const bars = dataArrays[resolution];
+          console.log(`[getBars]: returned entire ${resolution} array (${bars.length} bar(s))`, bars);
+          onHistoryCallback(bars, {
+            noData: bars.length === 0
+          });
+        } else {
+          const bars = dataArrays[resolution].filter(bar => {
+            const barTime = bar.time / 1000;
+            return barTime >= from && barTime < to;
+          });
+          console.log(`[getBars]: returned ${bars.length} bar(s)`, bars);
+          onHistoryCallback(bars, {
+            noData: bars.length === 0
+          });
+        }
+      },
+
+      subscribeBars: (symbolInfo, resolution, onRealtimeCallback, subscriberUID, onResetCacheNeededCallback) => {
+        console.log('[subscribeBars]: Method call with subscriberUID:', subscriberUID);
+        subscribers.set(subscriberUID, {
+          symbolInfo,
+          resolution,
+          callback: onRealtimeCallback
+        });
+      },
+
+      unsubscribeBars: (subscriberUID) => {
+        console.log('[unsubscribeBars]: Method call with subscriberUID:', subscriberUID);
+        subscribers.delete(subscriberUID);
+      },
+    };
+
+    let currentSection = 1; // Keep track of the current section
+    let currentInterval = '5S'; // Default interval 
+
+    document.getElementById('loadCharts').addEventListener('click', async function() {
+      const leftTopFile = document.getElementById('leftTop').files[0];
+      const rightTopFile = document.getElementById('rightTop').files[0];
+      const leftBottomFile = document.getElementById('leftBottom').files[0];
+      const rightBottomFile = document.getElementById('rightBottom').files[0];
+
+      if (leftTopFile) allBars.leftTop = await readCSV(leftTopFile);
+      if (rightTopFile) allBars.rightTop = await readCSV(rightTopFile);
+      if (leftBottomFile) allBars.leftBottom = await readCSV(leftBottomFile);
+      if (rightBottomFile) allBars.rightBottom = await readCSV(rightBottomFile);
+
+      if (allBars.leftTop.length > 0 || allBars.rightTop.length > 0 ||
+        allBars.leftBottom.length > 0 || allBars.rightBottom.length > 0) {
+
+        // Create charts with the default interval
+        createCharts(currentInterval);
+
+        // Start streaming with combined data
+        startStreaming(allBars);
+      }
+
+      document.getElementById('formSection').style.display = 'none';
+      document.getElementById('chartSection').style.display = 'block';
+      document.getElementById('priceTableContainer').style.display = 'block';
+      document.getElementById('tradeLogContainer').style.display = 'block';
+      priceUpdateInterval = setInterval(updatePrices, 1000); // Start the interval initially
+    });
+
+    function createCharts(interval) {
+      // Remove existing charts before creating new ones
+      removeExistingCharts();
+
+      // Create charts with the specified interval
+      if (allBars.leftTop.length > 0) createChart("chart_left_top", allBars.leftTop, "CE Data", interval);
+      if (allBars.rightTop.length > 0) createChart("chart_right_top", allBars.rightTop, "SPOT Data", interval);
+      if (allBars.leftBottom.length > 0) createChart("chart_left_bottom", allBars.leftBottom, "PE Data", interval);
+      if (allBars.rightBottom.length > 0) createChart("chart_right_bottom", allBars.rightBottom, "RHEL Data", interval);
+    }
+
+    function createChart(containerId, data, symbolName, interval) {
+      const widget = new TradingView.widget({
+        layout: {
+        // Maximize the chart area:
+        bottomMargin: 0,
+        time_scale: {
+            visible: true, // Ensure the time scale (X-axis) is visible
+            right_offset: 5, // Adjust as needed
+        },
+    },
+
+        symbol: symbolName,
+        interval: interval, // Use the specified interval
+        fullscreen: false,
+        timezone: "Asia/Kolkata",
+        width: "100%", // Ensure the chart takes full width of the container
+        height: "100%", // Ensure the chart takes full height of the container
+        container: containerId,
+        datafeed: Datafeed,
+        enabled_features: ["dont_show_boolean_study_arguments", "seconds_resolution"],
+        library_path: 'charting_library/',
+        theme: 'Dark',
+        time_scale: {
+        visible: true, // Ensure the time scale (X-axis) is visible
+        // right_offset: 5, // Adjust as needed
+    }
+      });
+      return widget;
+    }
+
+    function removeExistingCharts() {
+      const chartContainers = ['chart_left_top', 'chart_right_top', 'chart_left_bottom', 'chart_right_bottom'];
+      chartContainers.forEach(containerId => {
+        const container = document.getElementById(containerId);
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+      });
+    }
+
+    // Function to open a specific section
+    function openSection(index) {
+      const tabLinks = document.querySelectorAll(".tab-link");
+      tabLinks.forEach(link => link.classList.remove("active"));
+
+      const targetLink = tabLinks[index - 1];
+      if (targetLink) {
+        targetLink.classList.add("active");
+        currentSection = index;
+
+        // Get the new interval from the data-timeframe attribute
+        currentInterval = targetLink.getAttribute('data-timeframe');
+
+        // Recreate the charts with the new interval
+        createCharts(currentInterval);
+      }
+    }
+
+    // Add click event listeners to the tabs
+    const tabLinks = document.querySelectorAll(".tab-link");
+    tabLinks.forEach(link => {
+      link.addEventListener("click", function(event) {
+        event.preventDefault();
+        const targetId = this.getAttribute("href").substring(1);
+        const targetContent = document.getElementById(targetId);
+        if (targetContent) {
+          openSection([...tabLinks].indexOf(link) + 1);
+        }
+      });
+    });
+
+    // Add keyboard shortcuts for Ctrl+1 to Ctrl+9
+    document.addEventListener("keydown", function(event) {
+      if (event.altKey && event.key >= '1' && event.key <= '9') {
+        const sectionNumber = parseInt(event.key);
+        if (sectionNumber >= 1 && sectionNumber <= 9) {
+          openSection(sectionNumber);
+        }
+      }
+    });
+
+
+    let priceWidgetVisible = false;
+    let logWidgetVisible = false;
+    let callEntryPrice = null;
+    let putEntryPrice = null;
+    let tradeCount = 0;
+    let callTradeOpen = false; // Track if a call trade is open
+    let putTradeOpen = false; // Track if a put trade is open
+
+
+    function toggleWidget(widgetId) {
+      const widget = document.getElementById(widgetId);
+      const content = document.getElementById(widgetId + '-content');
+      const sourceTable = widgetId === 'price-widget' ? 'priceTable' : 'tradeLogTable';
+      if (widgetId === 'price-widget') {
+        priceWidgetVisible = !priceWidgetVisible;
+      } else {
+        logWidgetVisible = !logWidgetVisible;
+      }
+      if (widget.style.display === 'none' || widget.style.display === '') {
+        content.innerHTML = document.getElementById(sourceTable).outerHTML;
+        widget.style.display = 'block';
+      } else {
+        widget.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('keydown', function(event) {
+      if (event.ctrlKey && event.key === '.') {
+        event.preventDefault();
+        toggleWidget('price-widget');
+      } else if (event.ctrlKey && event.key === ';') {
+        event.preventDefault();
+        toggleWidget('log-widget');
+      } else if (event.ctrlKey && event.key === "'") {
+        event.preventDefault();
+        isPaused = !isPaused;
+        console.log("Streaming and updating paused:", isPaused);
+        if (isPaused) {
+          clearInterval(priceUpdateInterval); // Clear the interval when pausing
+        } else {
+          lastUpdateTime = Date.now();
+          updatePrices(); // Immediately update prices when resuming
+          priceUpdateInterval = setInterval(updatePrices, 1000); // Restart the interval
+        }
+      } else if (event.ctrlKey && event.key === 'b') { // Ctrl+B for Buy/Sell Call
+        event.preventDefault();
+        if (!callTradeOpen) {
+          buy('callPrice');
+        } else {
+          sell('callPrice');
+        }
+      } else if (event.ctrlKey && event.key === 'v') { // Ctrl+V for Buy/Sell Put
+        event.preventDefault();
+        if (!putTradeOpen) {
+          buy('putPrice');
+        } else {
+          sell('putPrice');
+        }
+      }
+    });
+
+    function updatePrices() {
+      if (!isPaused) {
+        // Find the bar with the closest timestamp across all data sources
+        let closestBar = null;
+        let minTimeDiff = Infinity;
+
+        for (const dataSource in allBars) {
+          for (let i = 0; i < allBars[dataSource].length; i++) {
+            const timeDiff = Math.abs(allBars[dataSource][i].time - lastUpdateTime);
+            if (timeDiff < minTimeDiff) {
+              minTimeDiff = timeDiff;
+              closestBar = allBars[dataSource][i];
+            }
+          }
+        }
+
+        if (closestBar) {
+          lastUpdateTime = closestBar.time;
+          updatePriceWidget(closestBar);
+        }
+
+        if (priceWidgetVisible) {
+          toggleWidget('price-widget');
+          toggleWidget('price-widget');
+        }
+      }
+    }
+
+    function updatePriceWidget(barData) {
+      const currentTime = new Date(barData.time).toLocaleTimeString();
+
+      // Determine the source of the bar data and update prices accordingly
+      let callPrice = 0, spotPrice = 0, putPrice = 0;
+      if (allBars.leftTop.some(bar => bar.time === barData.time)) {
+        callPrice = barData.close;
+      }
+      if (allBars.rightTop.some(bar => bar.time === barData.time)) {
+        spotPrice = barData.close;
+      }
+      if (allBars.leftBottom.some(bar => bar.time === barData.time)) {
+        putPrice = barData.close;
+      }
+
+      document.getElementById('currentTime').innerText = currentTime;
+      document.getElementById('callPrice').innerText = callPrice.toFixed(2);
+      document.getElementById('spotPrice').innerText = spotPrice.toFixed(2);
+      document.getElementById('putPrice').innerText = putPrice.toFixed(2);
+      updatePercentageChange(callPrice, 'callChange', callEntryPrice);
+      updatePercentageChange(putPrice, 'putChange', putEntryPrice);
+
+      // Update floating widget if visible
+      if (priceWidgetVisible) {
+        document.getElementById('price-widget-content').innerHTML = document.getElementById('priceTable').outerHTML;
+      }
+    }
+
+    function updatePercentageChange(currentPrice, changeId, entryPrice) {
+      if (entryPrice !== null) {
+        const percentChange = ((currentPrice - entryPrice) / entryPrice * 100).toFixed(2);
+        document.getElementById(changeId).innerText = `Change: ${percentChange}%`;
+      } else {
+        document.getElementById(changeId).innerText = `Change: 0%`;
+      }
+    }
+
+    function buy(priceId) {
+      const price = parseFloat(document.getElementById(priceId).innerText);
+      const logId = priceId === 'callPrice' ? 'callLog' : 'putLog';
+
+      if (priceId === 'callPrice' && !callTradeOpen) {
+        callEntryPrice = price;
+        document.getElementById(logId).innerText = `Bought Call at: $${price}`;
+        callTradeOpen = true; // Mark call trade as open
+        addTradeLog('Call', price); // Pass 'Call' for entry type
+      } else if (priceId === 'putPrice' && !putTradeOpen) {
+        putEntryPrice = price;
+        document.getElementById(logId).innerText = `Bought Put at: $${price}`;
+        putTradeOpen = true; // Mark put trade as open
+        addTradeLog('Put', price); // Pass 'Put' for entry type
+      }
+    }
+
+    function sell(priceId) {
+      const price = parseFloat(document.getElementById(priceId).innerText);
+      const logId = priceId === 'callPrice' ? 'callLog' : 'putLog';
+      let entryPrice = priceId === 'callPrice' ? callEntryPrice : putEntryPrice;
+
+      if (priceId === 'callPrice' && callTradeOpen) {
+        if (entryPrice !== null) {
+          const percentChange = ((price - entryPrice) / entryPrice * 100).toFixed(2);
+          document.getElementById(logId).innerText += ` | Sold at: $${price} | % Change: ${percentChange}%`;
+          updateTradeLog(priceId, price, percentChange);
+          callEntryPrice = null;
+          callTradeOpen = false; // Close the call trade
+        }
+      } else if (priceId === 'putPrice' && putTradeOpen) {
+        if (entryPrice !== null) {
+          const percentChange = ((price - entryPrice) / entryPrice * 100).toFixed(2);
+          document.getElementById(logId).innerText += ` | Sold at: $${price} | % Change: ${percentChange}%`;
+          updateTradeLog(priceId, price, percentChange);
+          putEntryPrice = null;
+          putTradeOpen = false; // Close the put trade
+        }
+      }
+    }
+
+    function addTradeLog(entryType, entryPrice) {
+      tradeCount++;
+      const currentTime = new Date().toLocaleTimeString();
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+                <td class="border px-4 py-2">${tradeCount}</td>
+                <td class="border px-4 py-2">${currentTime}</td> 
+                <td class="border px-4 py-2">${entryType}</td> 
+                <td class="border px-4 py-2">$${entryPrice.toFixed(2)}</td>
+                <td class="border px-4 py-2">-</td>
+                <td class="border px-4 py-2">-</td>
+            `;
+      newRow.id = `trade-${tradeCount}`;
+      document.getElementById('tradeLogBody').appendChild(newRow);
+      if (logWidgetVisible) {
+        toggleWidget('log-widget');
+        toggleWidget('log-widget');
+      }
+    }
+
+    function updateTradeLog(exitType, exitPrice, percentChange) {
+      const lastRow = document.getElementById(`trade-${tradeCount}`);
+      if (lastRow) {
+        lastRow.cells[4].innerText = `$${exitPrice.toFixed(2)}`;
+        lastRow.cells[5].innerText = `${percentChange}%`;
+        if (logWidgetVisible) {
+          toggleWidget('log-widget');
+          toggleWidget('log-widget');
+        }
+      }
+    }
+
+    // Updated fullscreen chart functionality
+    let currentFullscreenChart = null;
+    const chartSequence = ['chart_right_top', 'chart_right_bottom', 'chart_left_bottom', 'chart_left_top'];
+
+    function toggleFullscreen(chartId) {
+      const chart = document.getElementById(chartId);
+      if (!document.fullscreenElement) {
+        if (chart.requestFullscreen) {
+          chart.requestFullscreen();
+        } else if (chart.mozRequestFullScreen) { // Firefox
+          chart.mozRequestFullScreen();
+        } else if (chart.webkitRequestFullscreen) { // Chrome, Safari and Opera
+          chart.webkitRequestFullscreen();
+        } else if (chart.msRequestFullscreen) { // IE/Edge
+          chart.msRequestFullscreen();
+        }
+        currentFullscreenChart = chartId;
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) { // Firefox
+          document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { // IE/Edge
+          document.msExitFullscreen();
+        }
+        currentFullscreenChart = null;
+      }
+    }
+
+    function switchToNextChart() {
+      let nextChartId;
+      if (currentFullscreenChart) {
+        const currentIndex = chartSequence.indexOf(currentFullscreenChart);
+        const nextIndex = (currentIndex + 1) % chartSequence.length;
+        nextChartId = chartSequence[nextIndex];
+      } else {
+        nextChartId = chartSequence[0];
+      }
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().then(() => {
+          setTimeout(() => toggleFullscreen(nextChartId), 100);
+        });
+      } else {
+        toggleFullscreen(nextChartId);
+      }
+    }
+
+
+
+    document.addEventListener('keydown', function (event) {
+      if (event.ctrlKey) {
+        switch (event.key) {
+          case '1':
+            toggleFullscreen('chart_right_top');
+            break;
+          case '2':
+            toggleFullscreen('chart_right_bottom');
+            break;
+          case '3':
+            toggleFullscreen('chart_left_bottom');
+            break;
+          case '4':
+            toggleFullscreen('chart_left_top');
+            break;
+          case 'Tab':
+            event.preventDefault();
+            switchToNextChart();
+            break;
+        }
+      } else if (event.key === 'Tab') {
+        event.preventDefault();
+        if (!document.fullscreenElement) {
+          toggleFullscreen(chartSequence[0]);
+        } else {
+          switchToNextChart();
+        }
+      }
+    });
+
+
+    document.addEventListener('fullscreenchange', function () {
+      if (!document.fullscreenElement) {
+        currentFullscreenChart = null;
+      }
+    });
+  </script>
+</body>
+
+</html>
