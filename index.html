@@ -227,57 +227,58 @@
     function unixToMillis(unixTime) {
       return unixTime * 1000;
     }
+// mongo
 
-    // async function readCSV(file) {
-    //   const text = await file.text();
-    //   const rows = text.split('\n');
-    //   const data = [];
-    //   for (let i = 1; i < rows.length; i++) {
-    //     const row = rows[i].split(',');
-    //     data.push({
-    //       time: unixToMillis(parseFloat(row[0])), 
-    //       open: parseFloat(row[1]),
-    //       high: parseFloat(row[2]),
-    //       low: parseFloat(row[3]),
-    //       close: parseFloat(row[4]),
-    //       volume: parseFloat(row[5])
-    //     });
-    //   }
-    //   return data;
-    // }
+    async function readCSV(file) {
+      const text = await file.text();
+      const rows = text.split('\n');
+      const data = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i].split(',');
+        data.push({
+          time: unixToMillis(parseFloat(row[0])), 
+          open: parseFloat(row[1]),
+          high: parseFloat(row[2]),
+          low: parseFloat(row[3]),
+          close: parseFloat(row[4]),
+          volume: parseFloat(row[5])
+        });
+      }
+      return data;
+    }
 
 
 
  
-    async function readCSV(file) {
-      const text = await file.text();
-      const rows = text.split('\n');
-      const headers = rows[0].split(',');
+    // async function readCSV(file) {
+    //   const text = await file.text();
+    //   const rows = text.split('\n');
+    //   const headers = rows[0].split(',');
 
-      // Get column indices from headers
-      const timeIndex = headers.indexOf('time');
-      const openIndex = headers.indexOf('open');
-      const highIndex = headers.indexOf('high');
-      const lowIndex = headers.indexOf('low');
-      const closeIndex = headers.indexOf('close');
-      const volumeIndex = headers.indexOf('volume');
+    //   // Get column indices from headers
+    //   const timeIndex = headers.indexOf('time');
+    //   const openIndex = headers.indexOf('open');
+    //   const highIndex = headers.indexOf('high');
+    //   const lowIndex = headers.indexOf('low');
+    //   const closeIndex = headers.indexOf('close');
+    //   const volumeIndex = headers.indexOf('volume');
 
-      let bars = [];
-      for (let i = 1; i < rows.length; i++) {
-          const row = rows[i].split(',');
-          if (row.length === headers.length) { 
-              bars.push({
-                  time: new Date(row[timeIndex]).getTime() , // / 1000, // Convert time to Unix timestamp (seconds)
-                  open: parseFloat(row[openIndex]),
-                  high: parseFloat(row[highIndex]),
-                  low: parseFloat(row[lowIndex]),
-                  close: parseFloat(row[closeIndex]),
-                  volume: parseInt(row[volumeIndex])
-              });
-          }
-      }
-      return bars;
-      }
+    //   let bars = [];
+    //   for (let i = 1; i < rows.length; i++) {
+    //       const row = rows[i].split(',');
+    //       if (row.length === headers.length) { 
+    //           bars.push({
+    //               time: new Date(row[timeIndex]).getTime() , // / 1000, // Convert time to Unix timestamp (seconds)
+    //               open: parseFloat(row[openIndex]),
+    //               high: parseFloat(row[highIndex]),
+    //               low: parseFloat(row[lowIndex]),
+    //               close: parseFloat(row[closeIndex]),
+    //               volume: parseInt(row[volumeIndex])
+    //           });
+    //       }
+    //   }
+    //   return bars;
+    //   }
 
 
 
@@ -604,8 +605,37 @@
           visible: true, 
         }
       });
+     
+// mongo
+      widget.onChartReady(() => {
+    // // Add RSI
+    // widget.chart().createStudy('Relative Strength Index', false, false, {
+    //   length: 14,
+    // });
+
+    // // Add MACD
+    // widget.chart().createStudy('MACD', false, false, {
+    //   fast_length: 12,
+    //   slow_length: 26,
+    //   signal_length: 9,
+    // });
+
+    // Add Moving Averages
+    const studies = [
+      { name: "Moving Average", inputs: { length: 12 }, id: "MA12", options: { "plot.linewidth": 3, "plot.color": "#FFFF00" } },
+      { name: "Moving Average", inputs: { length: 24 }, id: "MA24", options: { "plot.linewidth": 3, "plot.color": "#FF0000" } },
+      { name: "Moving Average", inputs: { length: 50 }, id: "MA50", options: { "plot.linewidth": 3, "plot.color": "#FFFFFF" } },
+      { name: "Moving Average", inputs: { length: 200 }, id: "MA200", options: { "plot.linewidth": 4, "plot.color": "#0000FF" } }
+    ];
+
+    studies.forEach(study => {
+      widget.chart().createStudy(study.name, false, false, study.inputs, study.options, { id: study.id });
+    });
+  });
+
       return widget;
     }
+
 
     function removeExistingChart() {
       const container = document.getElementById('chart_container');
