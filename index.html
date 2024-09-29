@@ -6,7 +6,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TradingView Advanced Chart with CSV Data Demo</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"> -->
+  <link href="./tailwind.min.css" rel="stylesheet">
+
   <style>
     body,
     html {
@@ -229,56 +231,58 @@
     }
 // mongo
 
-    async function readCSV(file) {
-      const text = await file.text();
-      const rows = text.split('\n');
-      const data = [];
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i].split(',');
-        data.push({
-          time: unixToMillis(parseFloat(row[0])), 
-          open: parseFloat(row[1]),
-          high: parseFloat(row[2]),
-          low: parseFloat(row[3]),
-          close: parseFloat(row[4]),
-          volume: parseFloat(row[5])
-        });
-      }
-      return data;
-    }
 
-
-
- 
+// fyer
     // async function readCSV(file) {
     //   const text = await file.text();
     //   const rows = text.split('\n');
-    //   const headers = rows[0].split(',');
-
-    //   // Get column indices from headers
-    //   const timeIndex = headers.indexOf('time');
-    //   const openIndex = headers.indexOf('open');
-    //   const highIndex = headers.indexOf('high');
-    //   const lowIndex = headers.indexOf('low');
-    //   const closeIndex = headers.indexOf('close');
-    //   const volumeIndex = headers.indexOf('volume');
-
-    //   let bars = [];
+    //   const data = [];
     //   for (let i = 1; i < rows.length; i++) {
-    //       const row = rows[i].split(',');
-    //       if (row.length === headers.length) { 
-    //           bars.push({
-    //               time: new Date(row[timeIndex]).getTime() , // / 1000, // Convert time to Unix timestamp (seconds)
-    //               open: parseFloat(row[openIndex]),
-    //               high: parseFloat(row[highIndex]),
-    //               low: parseFloat(row[lowIndex]),
-    //               close: parseFloat(row[closeIndex]),
-    //               volume: parseInt(row[volumeIndex])
-    //           });
-    //       }
+    //     const row = rows[i].split(',');
+    //     data.push({
+    //       time: unixToMillis(parseFloat(row[0])), 
+    //       open: parseFloat(row[1]),
+    //       high: parseFloat(row[2]),
+    //       low: parseFloat(row[3]),
+    //       close: parseFloat(row[4]),
+    //       volume: parseFloat(row[5])
+    //     });
     //   }
-    //   return bars;
-    //   }
+    //   return data;
+    // }
+
+
+
+// dhan
+    async function readCSV(file) {
+      const text = await file.text();
+      const rows = text.split('\n');
+      const headers = rows[0].split(',');
+
+      // Get column indices from headers
+      const timeIndex = headers.indexOf('time');
+      const openIndex = headers.indexOf('open');
+      const highIndex = headers.indexOf('high');
+      const lowIndex = headers.indexOf('low');
+      const closeIndex = headers.indexOf('close');
+      const volumeIndex = headers.indexOf('volume');
+
+      let bars = [];
+      for (let i = 1; i < rows.length; i++) {
+          const row = rows[i].split(',');
+          if (row.length === headers.length) { 
+              bars.push({
+                  time: new Date(row[timeIndex]).getTime() , // / 1000, // Convert time to Unix timestamp (seconds)
+                  open: parseFloat(row[openIndex]),
+                  high: parseFloat(row[highIndex]),
+                  low: parseFloat(row[lowIndex]),
+                  close: parseFloat(row[closeIndex]),
+                  volume: parseInt(row[volumeIndex])
+              });
+          }
+      }
+      return bars;
+      }
 
 
 
